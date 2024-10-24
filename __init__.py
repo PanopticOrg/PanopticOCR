@@ -1,2 +1,2 @@
-from .main import PluginExample
-plugin_class = PluginExample
+from .main import OCRPlugin
+plugin_class = OCRPlugin
