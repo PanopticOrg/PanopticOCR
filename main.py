@@ -1,13 +1,11 @@
 from pydantic import BaseModel
 
+from compute_ocr_task import ComputeOCRTask
 from panoptic.core.plugin.plugin import APlugin
 from panoptic.models import ActionContext, PropertyType, PropertyMode, DbCommit, Instance, ImageProperty, Property
 from panoptic.models.results import ActionResult
 from panoptic.core.plugin.plugin_project_interface import PluginProjectInterface
-
-from doctr.io import DocumentFile
 from doctr.models import ocr_predictor
-
 
 class PluginParams(BaseModel):
     """
@@ -17,40 +15,25 @@ class PluginParams(BaseModel):
   
   
 class OCRPlugin(APlugin):  
-    def __init__(self, project: PluginProjectInterface, plugin_path: str):  
-        super().__init__(name='OCRPlugin',project=project, plugin_path=plugin_path)
+    def __init__(self, project: PluginProjectInterface, plugin_path: str, name: str):  
+        super().__init__(name=name, project=project, plugin_path=plugin_path)
         self.params = PluginParams()  
         self.add_action_easy(self.ocr, ['execute'])
         self._model = ocr_predictor(pretrained=True, assume_straight_pages=True)
-  
+
     async def ocr(self, context: ActionContext):
         commit = DbCommit()
 
         prop = await self.get_or_create_property('OCRPlugin', PropertyType.string, PropertyMode.sha1)
-
+        commit.properties.append(prop)
+        res = await self.project.do(commit)
+        real_prop = res.properties[0]
         instances = await self.project.get_instances(ids=context.instance_ids)
         unique_sha1 = list({i.sha1: i for i in instances}.values())
-        tasks = [await self.single_ocr(i, prop) for i in unique_sha1]
-        values = tasks
+        [await self.ocr_task(i, real_prop) for i in unique_sha1]
 
-        commit.properties.append(prop)
-        commit.image_values.extend(values)
-
-        res = await self.project.do(commit)
         return ActionResult(commit=res)
 
-    async def single_ocr(self, instance: Instance, prop: Property):
-        text = await self.make_ocr(instance.url)
-        return ImageProperty(property_id=prop.id, sha1=instance.sha1, value=text)
-
-    async def make_ocr(self, image_path):
-        single_img_doc = DocumentFile.from_images(image_path)
-        result = self._model(single_img_doc)
-        res = ""
-        js = result.export()
-        for block in js['pages'][0]['blocks']:
-            for line in block['lines']:
-                for word in line['words']:
-                    if word['confidence'] > 0.50:
-                        res += " " + word['value']
-        return res
+    async def ocr_task(self, instance, prop):
+        task = ComputeOCRTask(self, instance, prop)
+        self.project.add_task(task)
