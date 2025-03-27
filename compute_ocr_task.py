@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 from PIL import Image
 
 from panoptic.core.task.task import Task
-from panoptic.models import Instance, Vector, Property, ImageProperty, DbCommit
+from panoptic.models import Instance, Property, ImageProperty, DbCommit
 
 logger = logging.getLogger('PanopticOCR:OCRTask')
 
@@ -53,7 +53,7 @@ class ComputeOCRTask(Task):
         return res
 
     def preprocess_image(self, image_path):
-        image = Image.open(image_path).convert('L')
+        image = Image.open(image_path)
         params = self.plugin.params
         x, y, w, h = params.crop_x, params.crop_y, params.crop_width, params.crop_height
         if any([x > 0, y > 0, w > 0, h > 0]):
