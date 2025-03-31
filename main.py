@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
-from compute_ocr_task import ComputeOCRTask
+from .compute_ocr_task import ComputeOCRTask
+
 from panoptic.core.plugin.plugin import APlugin
 from panoptic.models import ActionContext, PropertyType, PropertyMode, DbCommit, Instance, ImageProperty, Property
 from panoptic.models.results import ActionResult
