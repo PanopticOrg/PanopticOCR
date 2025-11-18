@@ -31,7 +31,7 @@ class ComputeOCRTask(Task):
         instance = self.instance
         ocr_function = self._get_ocr_function(self.model)
         image = self.preprocess_image(instance.url)
-        text = await self._async(ocr_function, image)
+        text = await self.run_async(ocr_function, image)
         commit = DbCommit()
         commit.image_values.extend([ImageProperty(property_id=self.prop.id, sha1=instance.sha1, value=text)])
         res = await self.project.do(commit)
@@ -53,7 +53,7 @@ class ComputeOCRTask(Task):
         return res
 
     def preprocess_image(self, image_path):
-        image = Image.open(image_path)
+        image = Image.open(image_path).convert('RGB')
         params = self.plugin.params
         x, y, w, h = params.crop_x, params.crop_y, params.crop_width, params.crop_height
         if any([x > 0, y > 0, w > 0, h > 0]):

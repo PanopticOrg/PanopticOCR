@@ -4,7 +4,7 @@ from .compute_ocr_task import ComputeOCRTask
 
 from panoptic.core.plugin.plugin import APlugin
 from panoptic.models import ActionContext, PropertyType, PropertyMode, DbCommit, Instance, ImageProperty, Property
-from panoptic.models.results import ActionResult
+from panoptic.models.results import ActionResult, Notif, NotifType
 from panoptic.core.plugin.plugin_project_interface import PluginProjectInterface
 
 class PluginParams(BaseModel):
@@ -34,7 +34,7 @@ class OCRPlugin(APlugin):
     async def ocr(self, context: ActionContext):
         commit = DbCommit()
 
-        prop = await self.get_or_create_property(self.params.ocr_prop_name, PropertyType.string, PropertyMode.sha1)
+        prop = await self.project.get_or_create_property(self.params.ocr_prop_name, PropertyType.string, PropertyMode.sha1)
         commit.properties.append(prop)
         res = await self.project.do(commit)
         real_prop = res.properties[0]
@@ -44,7 +44,12 @@ class OCRPlugin(APlugin):
             self._model = await self._init_doctr_model()
         [await self.ocr_task(i, real_prop) for i in unique_sha1]
 
-        return ActionResult(commit=res)
+        notif = Notif(
+            type=NotifType.INFO,
+            name='compute_ocr',
+            message=f'OCR started on {len(unique_sha1)} images'
+        )
+        return ActionResult(notifs=[notif])
 
     async def ocr_task(self, instance, prop):
         task = ComputeOCRTask(self, instance, prop, self.params.model)
