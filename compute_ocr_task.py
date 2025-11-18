@@ -34,11 +34,7 @@ class ComputeOCRTask(Task):
         text = await self.run_async(ocr_function, image)
         commit = DbCommit()
         commit.image_values.extend([ImageProperty(property_id=self.prop.id, sha1=instance.sha1, value=text)])
-        res = await self.project.do(commit)
-        # use these two lines to update on front when the data is available
-        self.project.ui.commits.append(commit)
-        self.project._project.db.on_import_instance.emit(commit.image_values[0])
-        return res.image_values[0]
+        await self.project.do(commit)
 
     def make_ocr_doctr(self, image: Image):
         image_arr = np.asarray(image)
