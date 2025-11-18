@@ -41,7 +41,7 @@ class OCRPlugin(APlugin):
         instances = await self.project.get_instances(ids=context.instance_ids)
         unique_sha1 = list({i.sha1: i for i in instances}.values())
         if self.params.model == "doctr":
-            self._model = await self._init_doctr_model()
+            self._model = await self.project.run_async(self._init_doctr_model)
         [await self.ocr_task(i, real_prop) for i in unique_sha1]
 
         notif = Notif(
@@ -55,7 +55,7 @@ class OCRPlugin(APlugin):
         task = ComputeOCRTask(self, instance, prop, self.params.model)
         self.project.add_task(task)
 
-    async def _init_doctr_model(self):
+    def _init_doctr_model(self):
         from doctr.models import ocr_predictor
         return  ocr_predictor(det_arch="db_resnet50", reco_arch="crnn_mobilenet_v3_small", pretrained=True, assume_straight_pages=True,
                       disable_page_orientation=True, disable_crop_orientation=True)
