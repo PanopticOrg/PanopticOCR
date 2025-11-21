@@ -34,11 +34,11 @@ class OCRPlugin(APlugin):
     async def ocr(self, context: ActionContext):
         commit = DbCommit()
 
-        group = self.project.create_property_group('ocr_data')
+        # group = self.project.create_property_group('ocr_data')
         prop = await self.project.get_or_create_property(self.params.ocr_prop_name, PropertyType.string, PropertyMode.sha1)
-        prop.property_group_id = group.id
+        # prop.property_group_id = group.id
         commit.properties.append(prop)
-        commit.property_groups.append(group)
+        # commit.property_groups.append(group)
 
         res = await self.project.do(commit)
         real_prop = res.properties[0]
